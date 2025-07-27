@@ -1,0 +1,214 @@
+{
+  "info": {
+    "name": "Serverless User API",
+    "description": "Collection for testing Serverless User API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev",
+      "description": "Base URL for the API - Replace YOUR_API_ID with actual API Gateway ID"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["users"]
+        },
+        "description": "Create a new user with a name"
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 200,\n  \"body\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"name\": \"John Doe\",\n    \"createdAt\": \"2023-07-17T10:30:00.000Z\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Get All Users",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["users"]
+        },
+        "description": "Get all users from the database"
+      },
+      "response": [
+        {
+          "name": "Success Response",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 200,\n  \"body\": [\n    {\n      \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n      \"name\": \"John Doe\",\n      \"createdAt\": \"2023-07-17T10:30:00.000Z\"\n    },\n    {\n      \"id\": \"987fcdeb-51a2-43d1-9c67-123456789abc\",\n      \"name\": \"Jane Smith\",\n      \"createdAt\": \"2023-07-17T10:25:00.000Z\"\n    }\n  ]\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User - Error (Empty Name)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["users"]
+        },
+        "description": "Test error case with empty name"
+      },
+      "response": [
+        {
+          "name": "Error Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Name is required and must be a non-empty string\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Create User - Error (Missing Name)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/users",
+          "host": ["{{baseUrl}}"],
+          "path": ["users"]
+        },
+        "description": "Test error case with missing name field"
+      },
+      "response": [
+        {
+          "name": "Error Response",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Name is required and must be a non-empty string\"\n}"
+        }
+      ]
+    }
+  ]
+}

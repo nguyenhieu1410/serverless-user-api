@@ -1,0 +1,9 @@
+{
+  "name": "uuid-layer",
+  "version": "1.0.0",
+  "description": "Lambda layer containing UUID library",
+  "main": "index.js",
+  "dependencies": {
+    "uuid": "^9.0.0"
+  }
+}

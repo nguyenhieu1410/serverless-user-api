@@ -1,0 +1,21 @@
+version = 0.1
+[default]
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+stack_name = "serverless-user-api"
+s3_bucket = ""  # Will be created automatically
+s3_prefix = "serverless-user-api"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Stage=dev"
+image_repositories = []
+
+[default.local_start_api.parameters]
+warm_containers = "EAGER"
+
+[default.local_start_lambda.parameters]
+warm_containers = "EAGER"

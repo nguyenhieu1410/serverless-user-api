@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  serverless-user-api
+  
+  Sample SAM Template for serverless-user-api
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        USERS_TABLE: !Ref UsersTable
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    Description: Stage name for the API
+  
+  DomainName:
+    Type: String
+    Description: Custom domain name for API (e.g., api.example.com)
+    Default: ""
+
+Resources:
+  # Lambda Layer for UUID library
+  UuidLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: uuid-layer
+      Description: Layer containing UUID library
+      ContentUri: layers/uuid-layer/
+      CompatibleRuntimes:
+        - nodejs18.x
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: nodejs18.x
+
+  # DynamoDB Table
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ${AWS::StackName}-users-${Stage}
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-users-table
+
+  # Lambda Functions
+  CreateUserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: createUser.handler
+      Layers:
+        - !Ref UuidLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        CreateUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UserApi
+            Path: /users
+            Method: post
+
+  GetUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/handlers/
+      Handler: getUsers.handler
+      Layers:
+        - !Ref UuidLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref UsersTable
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UserApi
+            Path: /users
+            Method: get
+
+  # API Gateway
+  UserApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      DefinitionBody:
+        openapi: 3.0.1
+        info:
+          title: User API
+          version: 1.0.0
+        paths:
+          /users:
+            post:
+              summary: Create a new user
+              requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                      required:
+                        - name
+              responses:
+                '200':
+                  description: User created successfully
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          statusCode:
+                            type: integer
+                          body:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              createdAt:
+                                type: string
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateUserFunction.Arn}/invocations
+            get:
+              summary: Get all users
+              responses:
+                '200':
+                  description: List of users
+                  content:
+                    application/json:
+                      schema:
+                        type: object
+                        properties:
+                          statusCode:
+                            type: integer
+                          body:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                name:
+                                  type: string
+                                createdAt:
+                                  type: string
+              x-amazon-apigateway-integration:
+                type: aws_proxy
+                httpMethod: POST
+                uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetUsersFunction.Arn}/invocations
+
+  # Custom Domain (Optional)
+  ApiDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Condition: HasDomainName
+    Properties:
+      DomainName: !Ref DomainName
+      CertificateArn: !Ref ApiCertificate
+      SecurityPolicy: TLS_1_2
+
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Condition: HasDomainName
+    Properties:
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-api-certificate
+
+  ApiBasePathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Condition: HasDomainName
+    Properties:
+      DomainName: !Ref ApiDomainName
+      RestApiId: !Ref UserApi
+      Stage: !Ref Stage
+
+Conditions:
+  HasDomainName: !Not [!Equals [!Ref DomainName, ""]]
+
+Outputs:
+  UserApi:
+    Description: "API Gateway endpoint URL for User API"
+    Value: !Sub "https://${UserApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+    Export:
+      Name: !Sub ${AWS::StackName}-UserApiUrl
+
+  CustomDomainUrl:
+    Condition: HasDomainName
+    Description: "Custom domain URL for User API"
+    Value: !Sub "https://${DomainName}/"
+    Export:
+      Name: !Sub ${AWS::StackName}-CustomDomainUrl
+
+  UsersTableName:
+    Description: "DynamoDB table name for users"
+    Value: !Ref UsersTable
+    Export:
+      Name: !Sub ${AWS::StackName}-UsersTableName
+
+  CreateUserFunctionArn:
+    Description: "Create User Lambda Function ARN"
+    Value: !GetAtt CreateUserFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-CreateUserFunctionArn
+
+  GetUsersFunctionArn:
+    Description: "Get Users Lambda Function ARN"
+    Value: !GetAtt GetUsersFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-GetUsersFunctionArn
