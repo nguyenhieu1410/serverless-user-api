@@ -1,0 +1,25 @@
+{
+  "id": "serverless-user-api-env",
+  "name": "Serverless User API Environment",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev",
+      "description": "Base URL for the API - Replace YOUR_API_ID with actual API Gateway ID",
+      "enabled": true
+    },
+    {
+      "key": "region",
+      "value": "us-east-1",
+      "description": "AWS Region",
+      "enabled": true
+    },
+    {
+      "key": "stage",
+      "value": "dev",
+      "description": "API Gateway Stage",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}
