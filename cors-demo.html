@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Demo - Serverless User API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 300px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .users-list {
+            margin-top: 20px;
+        }
+        .user-item {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌐 CORS Demo - Serverless User API</h1>
+        
+        <div class="info">
+            <strong>Mục đích:</strong> Demo này cho thấy cách CORS hoạt động khi gọi API từ browser.
+            <br><strong>Lưu ý:</strong> Mở Developer Tools (F12) để xem OPTIONS requests (preflight).
+        </div>
+
+        <div class="form-group">
+            <label for="apiUrl">API Base URL:</label>
+            <input type="text" id="apiUrl" placeholder="https://xxxxxxxxxx.execute-api.us-east-1.amazonaws.com/dev/">
+        </div>
+
+        <div class="form-group">
+            <label for="userName">User Name:</label>
+            <input type="text" id="userName" placeholder="Enter user name">
+        </div>
+
+        <div>
+            <button onclick="createUser()">Create User (POST)</button>
+            <button onclick="getUsers()">Get Users (GET)</button>
+            <button onclick="testOptions()">Test OPTIONS</button>
+            <button onclick="clearResponse()">Clear</button>
+        </div>
+
+        <div id="response"></div>
+        <div id="usersList" class="users-list"></div>
+    </div>
+
+    <script>
+        function showResponse(message, type = 'info') {
+            const responseDiv = document.getElementById('response');
+            responseDiv.className = `response ${type}`;
+            responseDiv.textContent = message;
+        }
+
+        function clearResponse() {
+            document.getElementById('response').textContent = '';
+            document.getElementById('usersList').innerHTML = '';
+        }
+
+        async function createUser() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const userName = document.getElementById('userName').value.trim();
+
+            if (!apiUrl || !userName) {
+                showResponse('Please enter both API URL and User Name', 'error');
+                return;
+            }
+
+            try {
+                showResponse('Sending POST request... (Check Network tab for OPTIONS preflight)', 'info');
+                
+                const response = await fetch(`${apiUrl}users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: userName })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ User created successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    document.getElementById('userName').value = '';
+                } else {
+                    showResponse(`❌ Error creating user:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResponse(`❌ Network error:\n\n${error.message}\n\nPossible causes:\n- CORS not configured properly\n- API URL incorrect\n- Network connectivity issues`, 'error');
+            }
+        }
+
+        async function getUsers() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+
+            if (!apiUrl) {
+                showResponse('Please enter API URL', 'error');
+                return;
+            }
+
+            try {
+                showResponse('Sending GET request...', 'info');
+                
+                const response = await fetch(`${apiUrl}users`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showResponse(`✅ Users retrieved successfully!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+                    
+                    // Display users in a nice format
+                    const usersList = document.getElementById('usersList');
+                    if (data.body && data.body.length > 0) {
+                        usersList.innerHTML = '<h3>👥 Users List:</h3>' + 
+                            data.body.map(user => 
+                                `<div class="user-item">
+                                    <strong>${user.name}</strong><br>
+                                    <small>ID: ${user.id}</small><br>
+                                    <small>Created: ${new Date(user.createdAt).toLocaleString()}</small>
+                                </div>`
+                            ).join('');
+                    } else {
+                        usersList.innerHTML = '<h3>👥 No users found</h3>';
+                    }
+                } else {
+                    showResponse(`❌ Error getting users:\n\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                showResponse(`❌ Network error:\n\n${error.message}`, 'error');
+            }
+        }
+
+        async function testOptions() {
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+
+            if (!apiUrl) {
+                showResponse('Please enter API URL', 'error');
+                return;
+            }
+
+            try {
+                showResponse('Sending OPTIONS request...', 'info');
+                
+                const response = await fetch(`${apiUrl}users`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'Content-Type'
+                    }
+                });
+
+                const headers = {};
+                for (let [key, value] of response.headers.entries()) {
+                    if (key.toLowerCase().includes('access-control')) {
+                        headers[key] = value;
+                    }
+                }
+
+                showResponse(`✅ OPTIONS response:\n\nStatus: ${response.status}\n\nCORS Headers:\n${JSON.stringify(headers, null, 2)}`, 'success');
+            } catch (error) {
+                showResponse(`❌ OPTIONS request failed:\n\n${error.message}`, 'error');
+            }
+        }
+
+        // Auto-fill API URL if available in localStorage
+        window.onload = function() {
+            const savedUrl = localStorage.getItem('apiUrl');
+            if (savedUrl) {
+                document.getElementById('apiUrl').value = savedUrl;
+            }
+        };
+
+        // Save API URL to localStorage when changed
+        document.getElementById('apiUrl').addEventListener('change', function() {
+            localStorage.setItem('apiUrl', this.value);
+        });
+    </script>
+</body>
+</html>
